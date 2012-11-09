@@ -11,6 +11,11 @@ main:
   beq $t0, $t0, 0x16
 nope:
   beq $t0, $t0, main
+  j main
+  jal nope
+  j 0x0010000
+
+
 #  j main
 #  jal main
 #nope:

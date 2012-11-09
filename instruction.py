@@ -16,12 +16,12 @@ instruction_types = [
               "(?P<name>[a-zA-Z]+)\s*"
               "(?P<rt>\$[0-9a-zA-Z]+)\s*,\s*"
               "(?P<rs>\$[0-9a-zA-Z]+)\s*,\s*"
-              "(?P<imm>[x0-9A-Fa-f]+)"),
+              "(?P<imm>-?[x0-9A-Fa-f]+)"),
 
   # beq $t0, $0, main
   re.compile(r"^[^#]*?"
               "(?P<name>[a-zA-Z]+)\s*"
-              "(?P<rd>\$[0-9a-zA-Z]+)\s*,\s*"
+              "(?P<rt>\$[0-9a-zA-Z]+)\s*,\s*"
               "(?P<rs>\$[0-9a-zA-Z]+)\s*,\s*"
               "(?P<label>[0-9a-zA-Z]+)"),
 
@@ -39,14 +39,14 @@ instruction_types = [
   re.compile(r"^[^#]*?"
               "(?P<name>[a-zA-Z]+)\s*"
               "(?P<rt>\$[0-9a-zA-Z]+)\s*,\s*"
-              "(?P<imm>[x0-9A-Fa-f]+)\s*"
+              "(?P<imm>-?[x0-9A-Fa-f]+)\s*"
               "\(\s*(?P<rs>\$[0-9a-zA-Z]+\s*)\)\s*"),
 
   # lui $t0, 0x8403
   re.compile(r"^[^#]*?"
               "(?P<name>[a-zA-Z]+)\s*"
               "(?P<rt>\$[0-9a-zA-Z]+)\s*,\s*"
-              "(?P<imm>[x0-9A-Fa-f]+)\s*"),
+              "(?P<imm>-?[x0-9A-Fa-f]+)\s*"),
 ]
 
 r_type = {
@@ -117,59 +117,73 @@ labels = {}
 
 # Sometimes we will consider imm to be shamt.
 class Instruction:
-  def __init__(self, name=None, rs=None, rt=None,
+  def __init__(self, position, name=None, rs=None, rt=None,
                      rd=None, imm=None,
                      label=None):
     if name.lower() not in r_type.keys() and \
        name.lower() not in i_type.keys() and \
        name.lower() not in j_type.keys():
       raise Exception("'%s' is not a MIPS opcode"%(name.lower()))
+    self.position = position
     self.name = name.lower()
     self.rs = Register(rs) if rs is not None else UnusedRegister()
     self.rt = Register(rt) if rt is not None else UnusedRegister()
     self.rd = Register(rd) if rd is not None else UnusedRegister()
     self.imm = eval(imm) if imm is not None else 0
-    print imm, self.imm
     self.label = label
+
+    if imm is not None and self.label is not None:
+      raise Exception("A label and an immediate. Confused.")
 
   @staticmethod
   def registerlabel(label, addr):
     labels[label] = addr
 
   @staticmethod
-  def parseline(line):
+  def parseline(position, line):
     global instruction_types
     for t in instruction_types:
       m = t.match(line)
       if m is not None:
-        return Instruction(**m.groupdict())
+        return Instruction(position=position, **m.groupdict())
     raise Exception("'%s' not an instruction"%(line))
 
   def ToBinary(self):
+    if self.label is not None:
+      print self.label
+
     # TODO: deal with labels
     if self.name in r_type.keys():
-      print (self.rs.binary() << 21)
-      print self.rt.binary() << 16
-      print self.rd.binary() << 11
-      print self.imm << 6
-      print r_type[self.name][1] << 0
-
       b = 0                            # opcode
       b |= (self.rs.binary() << 21)    # rs
       b |= (self.rt.binary() << 16)    # rt
       b |= (self.rd.binary() << 11)    # rd
-      b |= (self.imm << 6)             # imm
+
+      b |= (self.imm << 6)             # shamt
       b |= (r_type[self.name][1] << 0) # funct
       return b
 
     if self.name in i_type.keys():
-      print i_type[self.name][0]
-      print self.rs
-      print self.rt
       b = i_type[self.name][0] << 26 # opcode
-      b |= (self.rs.binary() << 21) # rs
-      b |= (self.rt.binary() << 16) # rt
-      b |= (self.imm & 0xFFFF) # imm
+      b |= (self.rs.binary() << 21)  # rs
+      b |= (self.rt.binary() << 16)  # rt TODO bgtz
+
+      if self.label is not None:
+        if self.label not in labels:
+          raise Exception("Unknown label: %s"%(self.label))
+        print "thinking very hard"
+        print self.position
+        print labels[self.label]
+        z =  labels[self.label] - self.position - 1
+        print z
+        b |= (z & 0xFFFF)         # label
+      else:
+        # horribly hacky. are we a branch?
+        if "b" == self.name[0]:
+          b |= (self.imm>>2 & 0xFFFF) # imm
+        else:
+          b |= (self.imm & 0xFFFF)   # imm
+
       return b
 
     if self.name in j_type.keys():

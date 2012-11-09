@@ -28,8 +28,8 @@ def handle_line(line):
 parser = argparse.ArgumentParser(description="Make some plots.")
 parser.add_argument('filename')
 
-parser.add_argument('-b', '--base', default=0x40000, type=int,
-  help="Base location of code", metavar="addr")
+parser.add_argument('-b', '--base', default=argparse.SUPPRESS,
+    help="Base location of code", metavar="addr")
 
 parser.add_argument('-o', '--output', default=argparse.SUPPRESS,
   help="Output location", metavar="filename")
@@ -41,6 +41,9 @@ lines = f.readlines()
 f.close()
 
 output = open(args['output'], 'w') if 'output' in args else None
+
+if "base" in args:
+  Instruction.setbaseaddress(eval(args['base']))
 
 for l in lines:
   handle_line(l)

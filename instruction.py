@@ -2,6 +2,8 @@ import re
 
 from mips import Register, UnusedRegister
 
+base_address = 0
+
 instruction_types = [
   # add $0, $0, $0
   re.compile(r"^[^#]*?"
@@ -26,6 +28,9 @@ instruction_types = [
               "(?P<label>[0-9a-zA-Z]+)"),
 
   # j main
+  re.compile(r"^[^#]*?"
+              "(?P<name>j[al]*)\s*"
+              "(?P<imm>[x0-9]+)"),
   re.compile(r"^[^#]*?"
               "(?P<name>j[al]*)\s*"
               "(?P<label>[0-9a-zA-Z]+)"),
@@ -109,8 +114,8 @@ i_type = {
 }
 
 j_type = {
-"j":       (000010,),
-"jal":     (000011,),
+"j":       (0b000010,),
+"jal":     (0b000011,),
 }
 
 labels = {}
@@ -136,6 +141,11 @@ class Instruction:
       raise Exception("A label and an immediate. Confused.")
 
   @staticmethod
+  def setbaseaddress(address):
+    global base_address
+    base_address = address
+
+  @staticmethod
   def registerlabel(label, addr):
     labels[label] = addr
 
@@ -149,10 +159,9 @@ class Instruction:
     raise Exception("'%s' not an instruction"%(line))
 
   def ToBinary(self):
-    if self.label is not None:
-      print self.label
+    if self.label is not None and self.label not in labels:
+      raise Exception("Unknown label: %s"%(self.label))
 
-    # TODO: deal with labels
     if self.name in r_type.keys():
       b = 0                            # opcode
       b |= (self.rs.binary() << 21)    # rs
@@ -169,13 +178,7 @@ class Instruction:
       b |= (self.rt.binary() << 16)  # rt TODO bgtz
 
       if self.label is not None:
-        if self.label not in labels:
-          raise Exception("Unknown label: %s"%(self.label))
-        print "thinking very hard"
-        print self.position
-        print labels[self.label]
         z =  labels[self.label] - self.position - 1
-        print z
         b |= (z & 0xFFFF)         # label
       else:
         # horribly hacky. are we a branch?
@@ -188,7 +191,10 @@ class Instruction:
 
     if self.name in j_type.keys():
       b = (j_type[self.name][0]) << 26 #opcode
-      b |= (self.imm & 0x03FFFFFF) # address
+      if self.label is not None:
+        b |= (labels[self.label] + (base_address >> 2))      # label
+      else:
+        b |= (self.imm >> 2 & 0x03FFFFFF) # address
       return b
 
 

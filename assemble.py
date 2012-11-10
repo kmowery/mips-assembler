@@ -22,6 +22,8 @@ parser.add_argument('-p', '--data_out', default=argparse.SUPPRESS,
     help="Output file for data section", metavar="filename")
 parser.add_argument('-l', '--littleendian', default=False, action='store_true',
   help="Output as little endian")
+parser.add_argument('-v', '--verbose', default=False, action='store_true',
+  help="Be verbose")
 
 args = vars(parser.parse_args())
 
@@ -43,14 +45,15 @@ if 'output' in args:
       out.write("%c"%(b,))
   print "done!"
 
-else:
-  binary = mp.Bytes(endian=endianness)
-  for j in range(len(binary)/4):
-    print "%02x %02x %02x %02x"%tuple(binary[j*4:j*4+4])
-
 if 'data_out' in args:
   with open(args['data_out'], 'w') as out:
     print "Writing data to '%s'..."%(args['data_out']),
     for s in mp.data:
       out.write(s)
   print "done!"
+
+if 'verbose' in args or 'output' not in args:
+  binary = mp.Bytes(endian=endianness)
+  for j in range(len(binary)/4):
+    print "%02x %02x %02x %02x"%tuple(binary[j*4:j*4+4])
+

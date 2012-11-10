@@ -1,5 +1,6 @@
 import re
 
+import itertools
 from mips import Register, UnusedRegister
 
 base_address = 0
@@ -57,6 +58,10 @@ instruction_types = [
               "(?P<name>[a-zA-Z]+)\s*"
               "(?P<rt>\$[0-9a-zA-Z]+)\s*,\s*"
               "(?P<imm>-?[x0-9A-Fa-f]+)\s*"),
+
+  # nop
+  re.compile(r"(?i)^[^#]*?"
+              "(?P<name>nop)"),
 ]
 
 r_type = {
@@ -123,7 +128,16 @@ j_type = {
 "jal":     (0b000011,),
 }
 
+supported_pseudoinstructions = ['li', 'nop']
+
 labels = {}
+
+def MakeInstruction(position, **kwargs):
+  if 'name' in kwargs and \
+      kwargs['name'].lower() in supported_pseudoinstructions:
+    return PsedoInstruction(position, **kwargs)
+  else:
+    return Instruction(position, **kwargs)
 
 # Sometimes we will consider imm to be shamt.
 class Instruction:
@@ -139,7 +153,10 @@ class Instruction:
     self.rs = Register(rs) if rs is not None else UnusedRegister()
     self.rt = Register(rt) if rt is not None else UnusedRegister()
     self.rd = Register(rd) if rd is not None else UnusedRegister()
-    self.imm = eval(imm) if imm is not None else 0
+    if isinstance(imm, int):
+      self.imm = imm
+    else:
+      self.imm = eval(imm) if imm is not None else 0
     self.label = label
 
     if imm is not None and self.label is not None:
@@ -160,7 +177,13 @@ class Instruction:
     for t in instruction_types:
       m = t.match(line)
       if m is not None:
-        return Instruction(position=position, **m.groupdict())
+        g = m.groupdict()
+
+        if 'name' in g and \
+            g['name'].lower() in supported_pseudoinstructions:
+          return PseudoInstruction(position, **m.groupdict())
+
+        return Instruction(position=position, **g)
     raise Exception("'%s' not an instruction"%(line))
 
   def ToBinary(self):
@@ -205,6 +228,10 @@ class Instruction:
         b |= (self.imm >> 2 & 0x03FFFFFF) # address
       return b
 
+  # The size, in words, of this instruction
+  def Size(self):
+    return 1
+
   def Bytes(self, endian="big"):
     b = self.ToBinary()
     bytes = [ b >> 24,
@@ -217,4 +244,33 @@ class Instruction:
   def __repr__(self):
     return "Instruction(%s, %s, %s, %s, %s, %s)"% \
        (self.name, self.rs, self.rt, self.rd, self.imm, self.label)
+
+
+class PseudoInstruction:
+  def __init__(self, position, name=None, rs=None, rt=None,
+                     rd=None, imm=None,
+                     label=None):
+    self.position = position
+    self.instructions = []
+
+    if name == "li":
+      self.instructions.append(Instruction(position,
+        name="lui", rt=rt, imm=((eval(imm) >> 16) & 0xFFFF)))
+      self.instructions.append(Instruction(position+1,
+        name="ori", rt=rt, imm=(eval(imm) & 0xFFFF)))
+    elif name == "nop":
+      self.instructions.append(Instruction(position,
+        name="sll", rs="$0", rd="$0", rt="$0", imm="0x0"))
+    else:
+      raise "'%s' not support/not a pseudoinstruction"%(name)
+
+  def Bytes(self, endian="big"):
+    return list(itertools.chain( *[x.Bytes(endian=endian) for x in self.instructions] ))
+
+  def Size(self):
+    return sum([x.Size() for x in self.instructions])
+
+  def ToBinary(self):
+    x = 0;
+    raise Exception("ToBinary called on a PseudoInstruction")
 

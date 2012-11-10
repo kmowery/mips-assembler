@@ -6,14 +6,25 @@ main:
 #elsewhere:
 #  addi $t0, $t0, 0x20
 #  beq $t7, $a3, main
-  beq $t0, $t0, 0x1
-  bne $t0, $t0, nope
-  beq $t0, $t0, 0x16
+  #beq $t0, $t0, 0x1
+  #bne $t0, $t0, nope
+  #beq $t0, $t0, 0x16
 nope:
-  beq $t0, $t0, main
-  j main
-  jal nope
-  j 0x0010000
+  #beq $t0, $t0, main
+  #j main
+  #jal nope
+  #j 0x0010000
+  #BGEZ $t5, main
+  #bgtz $gp, main
+  #bltz $t5, nope
+  #three:
+  #blez $k0, three
+  li $t9, 0x40507098
+  ori $t9, 0x7098
+seriously:
+  nop
+  j seriously
+  add $0, $0, $0
 
 
 #  j main

@@ -4,32 +4,15 @@ import argparse
 import sys
 import re
 
+
+import mips
 from register import Register
 from instruction import Instruction
 import instruction
 
-instructions = []
-
-def handle_line(line):
-  loc = sum([x.Size() for x in instructions])
-
-  if re.match("^\s*$", line) is not None:
-    return
-  m = re.match("^\s*(?P<label>[a-zA-Z0-9]+):\.*$", line)
-  if m is not None:
-    Instruction.registerlabel(m.group('label'), loc)
-    return
-
-  m = re.match("^\s*#.*$", line)
-  if m is not None:
-    return
-
-  inst = Instruction.parseline(loc, line)
-  instructions.append(inst)
-
 parser = argparse.ArgumentParser(description="A very small MIPS assembler.")
 parser.add_argument('filename')
-parser.add_argument('-b', '--base', default=argparse.SUPPRESS,
+parser.add_argument('-t', '--text_base', default=0,
     help="Base location of code", metavar="addr")
 parser.add_argument('-o', '--output', default=argparse.SUPPRESS,
   help="Output location", metavar="filename")
@@ -42,28 +25,22 @@ f = open(args['filename'])
 lines = f.readlines()
 f.close()
 
+mp = mips.MIPSProgram(text_base=args['text_base'])
+mp.AddLines(lines)
+
 output = open(args['output'], 'w') if 'output' in args else None
-
-if "base" in args:
-  Instruction.setbaseaddress(eval(args['base']))
-
-for l in lines:
-  handle_line(l)
-
 endianness = "little" if args['littleendian'] else "top"
 
 if 'output' in args:
   with open(args['output'], 'w') as out:
     print "Writing to '%s'..."%(args['output']),
-    for x in instructions:
-      bytes = x.Bytes(endian=endianness)
-      for b in bytes:
-        out.write("%c"%(b,))
+    bytes = mp.Bytes(endian=endianness)
+    for b in bytes:
+      out.write("%c"%(b,))
   print "done!"
 
 else:
-  binary = [x.Bytes(endian=endianness) for x in instructions]
-  for bytes in binary:
-    for j in range(len(bytes)/4):
-      print "%02x %02x %02x %02x"%tuple(bytes[j*4:j*4+4])
+  binary = mp.Bytes(endian=endianness)
+  for j in range(len(binary)/4):
+    print "%02x %02x %02x %02x"%tuple(binary[j*4:j*4+4])
 

@@ -3,8 +3,6 @@ import re
 import itertools
 from register import Register, UnusedRegister
 
-base_address = 0
-
 instruction_types = [
   # add $0, $0, $0
   re.compile(r"(?i)^[^#]*?"
@@ -130,8 +128,6 @@ j_type = {
 
 supported_pseudoinstructions = ['li', 'nop']
 
-labels = {}
-
 def MakeInstruction(position, **kwargs):
   if 'name' in kwargs and \
       kwargs['name'].lower() in supported_pseudoinstructions:
@@ -141,13 +137,14 @@ def MakeInstruction(position, **kwargs):
 
 # Sometimes we will consider imm to be shamt.
 class Instruction:
-  def __init__(self, position, name=None, rs=None, rt=None,
+  def __init__(self, program, position, name=None, rs=None, rt=None,
                      rd=None, imm=None,
                      label=None):
     if name.lower() not in r_type.keys() and \
        name.lower() not in i_type.keys() and \
        name.lower() not in j_type.keys():
       raise Exception("'%s' is not a MIPS opcode"%(name.lower()))
+    self.program = program
     self.position = position
     self.name = name.lower()
     self.rs = Register(rs) if rs is not None else UnusedRegister()
@@ -163,16 +160,7 @@ class Instruction:
       raise Exception("A label and an immediate. Confused.")
 
   @staticmethod
-  def setbaseaddress(address):
-    global base_address
-    base_address = address
-
-  @staticmethod
-  def registerlabel(label, addr):
-    labels[label] = addr
-
-  @staticmethod
-  def parseline(position, line):
+  def parseline(program, position, line):
     global instruction_types
     for t in instruction_types:
       m = t.match(line)
@@ -181,13 +169,13 @@ class Instruction:
 
         if 'name' in g and \
             g['name'].lower() in supported_pseudoinstructions:
-          return PseudoInstruction(position, **m.groupdict())
+          return PseudoInstruction(program, position, **m.groupdict())
 
-        return Instruction(position=position, **g)
+        return Instruction(program=program, position=position, **g)
     raise Exception("'%s' not an instruction"%(line))
 
   def ToBinary(self):
-    if self.label is not None and self.label not in labels:
+    if self.label is not None and self.label not in self.program.Labels():
       raise Exception("Unknown label: %s"%(self.label))
 
     if self.name in r_type.keys():
@@ -209,7 +197,7 @@ class Instruction:
         b |= (i_type[self.name][1] << 16)  # rt adjustment
 
       if self.label is not None:
-        z =  labels[self.label] - self.position - 1
+        z =  self.program.Label(self.label) - self.position - 1
         b |= (z & 0xFFFF)         # label
       else:
         # horribly hacky. are we a branch?
@@ -223,7 +211,7 @@ class Instruction:
     if self.name in j_type.keys():
       b = (j_type[self.name][0]) << 26 #opcode
       if self.label is not None:
-        b |= (labels[self.label] + (base_address >> 2)) # label
+        b |= (self.program.Label(self.label) + (self.program.text_base >> 2)) # label
       else:
         b |= (self.imm >> 2 & 0x03FFFFFF) # address
       return b
@@ -247,19 +235,20 @@ class Instruction:
 
 
 class PseudoInstruction:
-  def __init__(self, position, name=None, rs=None, rt=None,
+  def __init__(self, program, position, name=None, rs=None, rt=None,
                      rd=None, imm=None,
                      label=None):
+    self.program = program
     self.position = position
     self.instructions = []
 
     if name == "li":
-      self.instructions.append(Instruction(position,
+      self.instructions.append(Instruction(self.program, position,
         name="lui", rt=rt, imm=((eval(imm) >> 16) & 0xFFFF)))
-      self.instructions.append(Instruction(position+1,
+      self.instructions.append(Instruction(self.program, position+1,
         name="ori", rt=rt, imm=(eval(imm) & 0xFFFF)))
     elif name == "nop":
-      self.instructions.append(Instruction(position,
+      self.instructions.append(Instruction(self.program, position,
         name="sll", rs="$0", rd="$0", rt="$0", imm="0x0"))
     else:
       raise "'%s' not support/not a pseudoinstruction"%(name)

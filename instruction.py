@@ -41,7 +41,7 @@ instruction_types = [
   # j main
   re.compile(r"(?i)^[^#]*?"
               "(?P<name>j[al]*)\s+"
-              "(?P<imm>[x0-9]+)"),
+              "(?P<imm>[x0-9a-fA-F]+)"),
   re.compile(r"(?i)^[^#]*?"
               "(?P<name>j[al]*)\s+"
               "(?P<label>[0-9a-zA-Z]+)"),

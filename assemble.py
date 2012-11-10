@@ -49,10 +49,8 @@ else:
     print "%02x %02x %02x %02x"%tuple(binary[j*4:j*4+4])
 
 if 'data_out' in args:
-  print mp.data
   with open(args['data_out'], 'w') as out:
     print "Writing data to '%s'..."%(args['data_out']),
     for s in mp.data:
-      print s
       out.write(s)
   print "done!"

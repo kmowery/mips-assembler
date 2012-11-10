@@ -40,15 +40,15 @@ instruction_types = [
 
   # j main
   re.compile(r"(?i)^[^#]*?"
-              "(?P<name>j[al]*)\s*"
+              "(?P<name>j[al]*)\s+"
               "(?P<imm>[x0-9]+)"),
   re.compile(r"(?i)^[^#]*?"
-              "(?P<name>j[al]*)\s*"
+              "(?P<name>j[al]*)\s+"
               "(?P<label>[0-9a-zA-Z]+)"),
 
   # jr $0
   re.compile(r"(?i)^[^#]*?"
-              "(?P<name>jr)\s*"
+              "(?P<name>jr)\s+"
               "(?P<rs>\$[0-9a-zA-Z]+)"),
 
   # lbu $t0, 0x04($0)

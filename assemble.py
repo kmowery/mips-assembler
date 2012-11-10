@@ -25,14 +25,14 @@ def handle_line(line):
   instructions.append(Instruction.parseline(len(instructions), line))
 
 
-parser = argparse.ArgumentParser(description="Make some plots.")
+parser = argparse.ArgumentParser(description="A very small MIPS assembler.")
 parser.add_argument('filename')
-
 parser.add_argument('-b', '--base', default=argparse.SUPPRESS,
     help="Base location of code", metavar="addr")
-
 parser.add_argument('-o', '--output', default=argparse.SUPPRESS,
   help="Output location", metavar="filename")
+parser.add_argument('-l', '--littleendian', default=False, action='store_true',
+  help="Output as little endian")
 
 args = vars(parser.parse_args())
 
@@ -48,19 +48,26 @@ if "base" in args:
 for l in lines:
   handle_line(l)
 
+endianness = "little" if args['littleendian'] else "top"
+
 if 'output' in args:
   with open(args['output'], 'w') as out:
     print "Writing to '%s'..."%(args['output']),
     for x in instructions:
-      bytes = x.Bytes()
+      bytes = x.Bytes(endian=endianness)
       for b in bytes:
         out.write("%c"%(b,))
   print "done!"
 
 else:
-  binary = [x.ToBinary() for x in instructions]
-  binary_s = ["%08x"%(x) for x in binary]
-  for s in binary_s:
-    print s
+  binary = [x.Bytes(endian=endianness) for x in instructions]
+  print binary
+  for i in binary:
+    print "%02x %02x %02x %02x"%tuple(i)
+
+
+#  binary_s = ["%02x"%(y) for x in binary for y in x]
+#  for s in binary_s:
+#    print s
 
 

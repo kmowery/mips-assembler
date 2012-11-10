@@ -6,49 +6,54 @@ base_address = 0
 
 instruction_types = [
   # add $0, $0, $0
-  re.compile(r"^[^#]*?"
+  re.compile(r"(?i)^[^#]*?"
               "(?P<name>[a-zA-Z]+)\s*"
               "(?P<rd>\$[0-9a-zA-Z]+)\s*,\s*"
               "(?P<rs>\$[0-9a-zA-Z]+)\s*,\s*"
               "(?P<rt>\$[0-9a-zA-Z]+)"),
 
-
   # addi $t0, $t0, 0x1
-  re.compile(r"^[^#]*?"
+  re.compile(r"(?i)^[^#]*?"
               "(?P<name>[a-zA-Z]+)\s*"
               "(?P<rt>\$[0-9a-zA-Z]+)\s*,\s*"
               "(?P<rs>\$[0-9a-zA-Z]+)\s*,\s*"
               "(?P<imm>-?[x0-9A-Fa-f]+)"),
 
   # beq $t0, $0, main
-  re.compile(r"^[^#]*?"
+  re.compile(r"(?i)^[^#]*?"
               "(?P<name>[a-zA-Z]+)\s*"
               "(?P<rt>\$[0-9a-zA-Z]+)\s*,\s*"
               "(?P<rs>\$[0-9a-zA-Z]+)\s*,\s*"
               "(?P<label>[0-9a-zA-Z]+)"),
 
+  # bgez $t5, main
+  re.compile(r"(?i)^[^#]*?"
+              "(?P<name>bgez|bgtz|blez|bltz)\s*"
+              "(?P<rs>\$[0-9a-zA-Z]+)\s*,\s*"
+              "(?P<label>[0-9a-zA-Z]+)"),
+
   # j main
-  re.compile(r"^[^#]*?"
+  re.compile(r"(?i)^[^#]*?"
               "(?P<name>j[al]*)\s*"
               "(?P<imm>[x0-9]+)"),
-  re.compile(r"^[^#]*?"
+  re.compile(r"(?i)^[^#]*?"
               "(?P<name>j[al]*)\s*"
               "(?P<label>[0-9a-zA-Z]+)"),
 
   # jr $0
-  re.compile(r"^[^#]*?"
+  re.compile(r"(?i)^[^#]*?"
               "(?P<name>jr)\s*"
               "(?P<rs>\$[0-9a-zA-Z]+)"),
 
   # lbu $t0, 0x04($0)
-  re.compile(r"^[^#]*?"
+  re.compile(r"(?i)^[^#]*?"
               "(?P<name>[a-zA-Z]+)\s*"
               "(?P<rt>\$[0-9a-zA-Z]+)\s*,\s*"
               "(?P<imm>-?[x0-9A-Fa-f]+)\s*"
               "\(\s*(?P<rs>\$[0-9a-zA-Z]+\s*)\)\s*"),
 
   # lui $t0, 0x8403
-  re.compile(r"^[^#]*?"
+  re.compile(r"(?i)^[^#]*?"
               "(?P<name>[a-zA-Z]+)\s*"
               "(?P<rt>\$[0-9a-zA-Z]+)\s*,\s*"
               "(?P<imm>-?[x0-9A-Fa-f]+)\s*"),
@@ -175,7 +180,10 @@ class Instruction:
     if self.name in i_type.keys():
       b = i_type[self.name][0] << 26 # opcode
       b |= (self.rs.binary() << 21)  # rs
-      b |= (self.rt.binary() << 16)  # rt TODO bgtz
+      b |= (self.rt.binary() << 16)  # rt
+      if len(i_type[self.name]) > 1:
+        # this is a b[gl][et]z instruction. Mux this in.
+        b |= (i_type[self.name][1] << 16)  # rt adjustment
 
       if self.label is not None:
         z =  labels[self.label] - self.position - 1
@@ -192,7 +200,7 @@ class Instruction:
     if self.name in j_type.keys():
       b = (j_type[self.name][0]) << 26 #opcode
       if self.label is not None:
-        b |= (labels[self.label] + (base_address >> 2))      # label
+        b |= (labels[self.label] + (base_address >> 2)) # label
       else:
         b |= (self.imm >> 2 & 0x03FFFFFF) # address
       return b

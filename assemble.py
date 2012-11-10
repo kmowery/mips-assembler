@@ -47,9 +47,20 @@ if "base" in args:
 
 for l in lines:
   handle_line(l)
-binary = [x.ToBinary() for x in instructions]
-binary_s = ["%08x"%(x) for x in binary]
-for s in binary_s:
-  print s
+
+if 'output' in args:
+  with open(args['output'], 'w') as out:
+    print "Writing to '%s'..."%(args['output']),
+    for x in instructions:
+      bytes = x.Bytes()
+      for b in bytes:
+        out.write("%c"%(b,))
+  print "done!"
+
+else:
+  binary = [x.ToBinary() for x in instructions]
+  binary_s = ["%08x"%(x) for x in binary]
+  for s in binary_s:
+    print s
 
 

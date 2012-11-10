@@ -197,6 +197,14 @@ class Instruction:
         b |= (self.imm >> 2 & 0x03FFFFFF) # address
       return b
 
+  def Bytes(self, endian="big"):
+    b = self.ToBinary()
+    bytes = [ b >> 24,
+              b >> 16 & 0xFF,
+              b >> 8 & 0xFF,
+              b & 0xFF ]
+    return bytes[::-1] if endian.lower() == "little" else bytes
+
 
   def __repr__(self):
     return "Instruction(%s, %s, %s, %s, %s, %s)"%(self.name, self.rs, self.rt, self.rd, self.imm, self.label)

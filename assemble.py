@@ -61,13 +61,6 @@ if 'output' in args:
 
 else:
   binary = [x.Bytes(endian=endianness) for x in instructions]
-  print binary
   for i in binary:
     print "%02x %02x %02x %02x"%tuple(i)
-
-
-#  binary_s = ["%02x"%(y) for x in binary for y in x]
-#  for s in binary_s:
-#    print s
-
 

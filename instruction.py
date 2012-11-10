@@ -215,5 +215,6 @@ class Instruction:
 
 
   def __repr__(self):
-    return "Instruction(%s, %s, %s, %s, %s, %s)"%(self.name, self.rs, self.rt, self.rd, self.imm, self.label)
+    return "Instruction(%s, %s, %s, %s, %s, %s)"% \
+       (self.name, self.rs, self.rt, self.rd, self.imm, self.label)
 

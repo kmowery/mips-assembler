@@ -52,10 +52,12 @@ class MIPSProgram:
 
   # Returns the label position
   def Label(self, label):
-    return self.labels[label]
+    if hasattr(label, '__call__'):
+      return label()
+    if label not in self.labels.keys():
+      raise Exception("Unknown label: '%s'"%(label))
 
-  def Labels(self):
-    return self.labels.keys()
+    return self.labels[label]
 
   def Bytes(self, endian="big"):
     return list(itertools.chain( *[x.Bytes(endian=endian) for x in self.instructions] ))

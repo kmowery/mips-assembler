@@ -34,7 +34,7 @@ instruction_types = [
 
   # bgez $t5, main
   re.compile(r"(?i)^[^#]*?"
-              "(?P<name>bgez|bgtz|blez|bltz|beq)\s*"
+              "(?P<name>bgez|bgtz|blez|bltz)\s*"
               "(?P<rs>\$[0-9a-zA-Z]+)\s*,\s*"
               "(?P<label>[0-9a-zA-Z]+)"),
 
@@ -63,6 +63,12 @@ instruction_types = [
               "(?P<name>[a-zA-Z]+)\s*"
               "(?P<rt>\$[0-9a-zA-Z]+)\s*,\s*"
               "(?P<imm>-?[x0-9A-Fa-f]+)\s*"),
+
+  # li $t0, label
+  re.compile(r"(?i)^[^#]*?"
+              "(?P<name>[a-zA-Z]+)\s*"
+              "(?P<rt>\$[0-9a-zA-Z]+)\s*,\s*"
+              "(?P<label>[0-9a-zA-Z]+)"),
 
   # nop
   re.compile(r"(?i)^[^#A-Za-z]*?"
@@ -182,9 +188,6 @@ class Instruction:
     raise Exception("'%s' not an instruction"%(line))
 
   def ToBinary(self):
-    if self.label is not None and self.label not in self.program.Labels():
-      raise Exception("Unknown label: %s"%(self.label))
-
     if self.name in r_type.keys():
       b = 0                            # opcode
       b |= (self.rs.binary() << 21)    # rs
@@ -254,10 +257,21 @@ class PseudoInstruction:
     self.instructions = []
 
     if name == "li":
-      self.instructions.append(Instruction(self.program, position,
-        name="lui", rt=rt, imm=((eval(imm) >> 16) & 0xFFFF)))
-      self.instructions.append(Instruction(self.program, position+1,
-        name="ori", rt=rt, imm=(eval(imm) & 0xFFFF)))
+      if label is not None:
+        # get all fancy
+        self.instructions.append(Instruction(self.program, position,
+          name="lui", rt=rt,
+          label=lambda: program.Label(label) >> 16 & 0xFFFF))
+        self.instructions.append(Instruction(self.program, position+1,
+          name="ori", rt=rt,
+          label=lambda: program.Label(label) & 0xFFFF))
+      else:
+        self.instructions.append(Instruction(self.program, position,
+          name="lui", rt=rt,
+          imm=((eval(imm) >> 16) & 0xFFFF)))
+        self.instructions.append(Instruction(self.program, position+1,
+          name="ori", rt=rt,
+          imm=(eval(imm) & 0xFFFF)))
     elif name == "nop":
       self.instructions.append(Instruction(self.program, position,
         name="sll", rs="$0", rd="$0", rt="$0", imm="0x0"))

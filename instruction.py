@@ -1,7 +1,7 @@
 import re
 
 import itertools
-from mips import Register, UnusedRegister
+from register import Register, UnusedRegister
 
 base_address = 0
 

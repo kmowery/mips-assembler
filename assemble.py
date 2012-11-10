@@ -4,7 +4,7 @@ import argparse
 import sys
 import re
 
-from mips import Register
+from register import Register
 from instruction import Instruction
 import instruction
 

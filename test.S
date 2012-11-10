@@ -1,4 +1,5 @@
-
+.STRING no "012345678"
+.STRING printfstr "012345678"
 
 
 main:
@@ -9,6 +10,7 @@ main:
   #beq $t0, $t0, 0x1
   #bne $t0, $t0, nope
   #beq $t0, $t0, 0x16
+  nop
 nope:
   #beq $t0, $t0, main
   #j main
@@ -19,12 +21,15 @@ nope:
   #bltz $t5, nope
   #three:
   #blez $k0, three
-  li $t9, 0x40507098
-  ori $t9, 0x7098
-seriously:
-  nop
-  j seriously
-  add $0, $0, $0
+#  li $t9, 0x40507098
+#  ori $t9, 0x7098
+#seriously:
+#  nop
+#  j seriously
+#  add $0, $0, $0
+  addi $t9, $t9, printfstr
+  bgez $t0, nope
+  beq $t0, nope
 
 
 #  j main

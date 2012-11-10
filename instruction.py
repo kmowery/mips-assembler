@@ -18,6 +18,13 @@ instruction_types = [
               "(?P<rs>\$[0-9a-zA-Z]+)\s*,\s*"
               "(?P<imm>-?[x0-9A-Fa-f]+)"),
 
+  # addi $t0, $t0, label
+  re.compile(r"(?i)^[^#]*?"
+              "(?P<name>[a-zA-Z]+)\s*"
+              "(?P<rt>\$[0-9a-zA-Z]+)\s*,\s*"
+              "(?P<rs>\$[0-9a-zA-Z]+)\s*,\s*"
+              "(?P<label>[A-Fa-f0-9]+)"),
+
   # beq $t0, $0, main
   re.compile(r"(?i)^[^#]*?"
               "(?P<name>[a-zA-Z]+)\s*"
@@ -27,7 +34,7 @@ instruction_types = [
 
   # bgez $t5, main
   re.compile(r"(?i)^[^#]*?"
-              "(?P<name>bgez|bgtz|blez|bltz)\s*"
+              "(?P<name>bgez|bgtz|blez|bltz|beq)\s*"
               "(?P<rs>\$[0-9a-zA-Z]+)\s*,\s*"
               "(?P<label>[0-9a-zA-Z]+)"),
 
@@ -58,7 +65,7 @@ instruction_types = [
               "(?P<imm>-?[x0-9A-Fa-f]+)\s*"),
 
   # nop
-  re.compile(r"(?i)^[^#]*?"
+  re.compile(r"(?i)^[^#A-Za-z]*?"
               "(?P<name>nop)"),
 ]
 
@@ -197,7 +204,11 @@ class Instruction:
         b |= (i_type[self.name][1] << 16)  # rt adjustment
 
       if self.label is not None:
-        z =  self.program.Label(self.label) - self.position - 1
+        # horribly hacky. are we a branch?
+        if "b" == self.name[0]:
+          z =  self.program.Label(self.label) - self.position - 1
+        else:
+          z =  self.program.Label(self.label)
         b |= (z & 0xFFFF)         # label
       else:
         # horribly hacky. are we a branch?

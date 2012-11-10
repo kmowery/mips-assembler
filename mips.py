@@ -5,9 +5,11 @@ from instruction import Instruction
 from register import Register, UnusedRegister
 
 class MIPSProgram:
-  def __init__(self, lines=None, text_base=0):
+  def __init__(self, lines=None, text_base=0, data_base=0x4000):
     self.text_base = text_base
+    self.data_base = data_base if isinstance(data_base, int) else eval(data_base)
     self.instructions = []
+    self.data = []
     self.labels = {}
 
     if lines is not None:
@@ -23,6 +25,11 @@ class MIPSProgram:
 
     if re.match("^\s*$", line) is not None:
       return
+
+    m = re.match(r'''^\s*\.STRING\s*(?P<label>[a-zA-Z0-9]+)\s*"(?P<str>.*)"''', line)
+    if m is not None:
+      self.RegisterDataLabel(m.group('label'), m.group('str'))
+      return
     m = re.match("^\s*(?P<label>[a-zA-Z0-9]+):\.*$", line)
     if m is not None:
       self.RegisterLabel(m.group('label'), loc)
@@ -36,6 +43,12 @@ class MIPSProgram:
 
   def RegisterLabel(self, label, addr):
     self.labels[label] = addr
+
+  def RegisterDataLabel(self, label, string):
+    string = string + "\0"
+    position = sum([len(x) for x in self.data])
+    self.labels[label] = self.data_base + position
+    self.data.append(string)
 
   # Returns the label position
   def Label(self, label):

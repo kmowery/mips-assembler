@@ -1,5 +1,7 @@
 import itertools
 import re
+import sys
+import traceback
 
 from instruction import Instruction
 from register import Register, UnusedRegister
@@ -30,29 +32,36 @@ class MIPSProgram:
     if re.match("^\s*$", line) is not None:
       return
 
-    m = re.match(
-        r'''^\s*\.DEFINE\s*(?P<label>[_a-zA-Z0-9]+)\s*(?P<value>.*)$''',
-        line)
-    if m is not None:
-      self.defines[m.group('label')] = m.group('value')
-      return
+    try:
+      m = re.match(
+          r'''^\s*\.DEFINE\s*(?P<label>[_a-zA-Z0-9]+)\s*(?P<value>.*)$''',
+          line)
+      if m is not None:
+        self.defines[m.group('label')] = m.group('value')
+        return
 
-    m = re.match(
-        r'''^\s*\.STRING\s*(?P<label>[_a-zA-Z0-9]+)\s*(?P<str>".*")''',
-        line)
-    if m is not None:
-      self.RegisterDataLabel(m.group('label'), eval(m.group('str')))
-      return
-    m = re.match("^\s*(?P<label>[_a-zA-Z0-9]+):\.*$", line)
-    if m is not None:
-      self.RegisterLabel(m.group('label'), loc)
-      return
-    m = re.match("^\s*#.*$", line)
-    if m is not None:
-      return
+      m = re.match(
+          r'''^\s*\.STRING\s*(?P<label>[_a-zA-Z0-9]+)\s*(?P<str>".*")''',
+          line)
+      if m is not None:
+        self.RegisterDataLabel(m.group('label'), eval(m.group('str')))
+        return
+      m = re.match("^\s*(?P<label>[_a-zA-Z0-9]+):\.*$", line)
+      if m is not None:
+        self.RegisterLabel(m.group('label'), loc)
+        return
+      m = re.match("^\s*#.*$", line)
+      if m is not None:
+        return
 
-    inst = Instruction.parseline(self, loc, line)
-    self.instructions.append(inst)
+      inst = Instruction.parseline(self, loc, line)
+      self.instructions.append(inst)
+    except Exception as e:
+      print
+      print traceback.format_exc(e)
+      print "*** Invalid line: '%s'"%(line)
+      print
+      sys.exit(1)
 
   def RegisterLabel(self, label, addr):
     self.labels[label] = addr

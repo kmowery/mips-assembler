@@ -29,6 +29,7 @@ args = vars(parser.parse_args())
 
 f = open(args['filename'])
 lines = f.readlines()
+lines = [x.replace("\n", "") for x in lines]
 f.close()
 
 mp = mips.MIPSProgram(text_base=args['text_base'], data_base=args['data_base'])

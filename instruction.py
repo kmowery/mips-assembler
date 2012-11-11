@@ -3,7 +3,8 @@ import re
 import itertools
 from register import Register, UnusedRegister
 
-NAME   = "(?P<name>[a-zA-Z]+)\s+"
+NAME_NO_SPACE = "(?P<name>[a-zA-Z]+)"
+NAME   = NAME_NO_SPACE + "\s+"
 LABEL  = "(?P<label>[a-zA-Z_][_0-9a-zA-Z]+)\s*"
 IMM    = "(?P<imm>-?[0-9][x0-9A-Fa-f]*)\s*"
 FIRST  = "(?P<first>\$[0-9a-zA-Z]+)\s*"
@@ -39,7 +40,7 @@ instruction_types = [
       NAME + IMM),
 
     re.compile(LINE_BEGIN +
-      NAME)
+      NAME_NO_SPACE)
 ]
 
 r_type = {
@@ -149,10 +150,10 @@ class Instruction:
       raise Exception("'%s' requires two registers"%(name))
     if len(registers) == 1 and (first is None or second is not None \
         or third is not None):
-      raise Exception("'%s' requires two registers"%(name))
+      raise Exception("'%s' requires one register"%(name))
     if len(registers) == 0 and (first is not None or second is not None \
         or third is not None):
-      raise Exception("'%s' requires two registers"%(name))
+      raise Exception("'%s' requires no registers"%(name))
 
     for pos,reg in zip(registers, rlist):
       if pos == "rs": self.rs = Register(reg)

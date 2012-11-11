@@ -3,66 +3,74 @@ import re
 import itertools
 from register import Register, UnusedRegister
 
+NAME  = "(?P<name>[a-zA-Z]+)\s*"
+RD    = "(?P<rd>\$[0-9a-zA-Z]+)\s*"
+RS    = "(?P<rs>\$[0-9a-zA-Z]+)\s*"
+RT    = "(?P<rt>\$[0-9a-zA-Z]+)\s*"
+LABEL = "(?P<label>[a-zA-Z_][_0-9a-zA-Z]+)\s*"
+IMM   = "(?P<imm>-?[0-9][x0-9A-Fa-f]*)\s*"
+COMMA = "\s*,\s*"
+
 instruction_types = [
   # add $0, $0, $0
-  re.compile(r"(?i)^[^#]*?"
-              "(?P<name>[a-zA-Z]+)\s*"
-              "(?P<rd>\$[0-9a-zA-Z]+)\s*,\s*"
-              "(?P<rs>\$[0-9a-zA-Z]+)\s*,\s*"
-              "(?P<rt>\$[0-9a-zA-Z]+)"),
+  re.compile(r"(?i)^[^#]*?" +
+              NAME +
+              RD + COMMA +
+              RS + COMMA +
+              RT),
 
   # addi $t0, $t0, 0x1
-  re.compile(r"(?i)^[^#]*?"
-              "(?P<name>[a-zA-Z]+)\s*"
-              "(?P<rt>\$[0-9a-zA-Z]+)\s*,\s*"
-              "(?P<rs>\$[0-9a-zA-Z]+)\s*,\s*"
-              "(?P<imm>-?[0-9][x0-9A-Fa-f]+)"),
+  re.compile(r"(?i)^[^#]*?" +
+              NAME +
+              RT + COMMA +
+              RS + COMMA +
+              IMM),
 
   # addi $t0, $t0, label
   # beq $t0, $0, main
-  re.compile(r"(?i)^[^#]*?"
-              "(?P<name>[a-zA-Z]+)\s*"
-              "(?P<rt>\$[0-9a-zA-Z]+)\s*,\s*"
-              "(?P<rs>\$[0-9a-zA-Z]+)\s*,\s*"
-              "(?P<label>[0-9a-zA-Z]+)"),
+  re.compile(r"(?i)^[^#]*?" +
+              NAME +
+              RT + COMMA +
+              RS + COMMA +
+              LABEL),
 
   # bgez $t5, main
   re.compile(r"(?i)^[^#]*?"
-              "(?P<name>bgez|bgtz|blez|bltz)\s*"
-              "(?P<rs>\$[0-9a-zA-Z]+)\s*,\s*"
-              "(?P<label>[0-9a-zA-Z]+)"),
+              "(?P<name>bgez|bgtz|blez|bltz)\s*" +
+              RS + COMMA +
+              LABEL),
 
   # j main
   re.compile(r"(?i)^[^#]*?"
-              "(?P<name>j[al]*)\s+"
-              "(?P<imm>[0-9][x0-9a-fA-F]+)"),
+              "(?P<name>j[al]*)\s+" +
+              IMM),
   re.compile(r"(?i)^[^#]*?"
-              "(?P<name>j[al]*)\s+"
-              "(?P<label>[0-9a-zA-Z]+)"),
+              "(?P<name>j[al]*)\s+" +
+              LABEL),
 
   # jr $0
   re.compile(r"(?i)^[^#]*?"
-              "(?P<name>jr)\s+"
-              "(?P<rs>\$[0-9a-zA-Z]+)"),
+              "(?P<name>jr)\s+" +
+              RS),
 
   # lbu $t0, 0x04($0)
-  re.compile(r"(?i)^[^#]*?"
-              "(?P<name>[a-zA-Z]+)\s*"
-              "(?P<rt>\$[0-9a-zA-Z]+)\s*,\s*"
-              "(?P<imm>-?[0-9][x0-9A-Fa-f]+)\s*"
-              "\(\s*(?P<rs>\$[0-9a-zA-Z]+\s*)\)\s*"),
+  re.compile(r"(?i)^[^#]*?" +
+              NAME +
+              RT + COMMA +
+              IMM +
+              "\(\s*" + RS + "\s*\)\s*"),
 
   # lui $t0, 0x8403
-  re.compile(r"(?i)^[^#]*?"
-              "(?P<name>[a-zA-Z]+)\s*"
-              "(?P<rt>\$[0-9a-zA-Z]+)\s*,\s*"
-              "(?P<imm>-?[0-9][x0-9A-Fa-f]+)\s*"),
+  re.compile(r"(?i)^[^#]*?" +
+              NAME +
+              RT + COMMA +
+              IMM),
 
   # li $t0, label
-  re.compile(r"(?i)^[^#]*?"
-              "(?P<name>[a-zA-Z]+)\s*"
-              "(?P<rt>\$[0-9a-zA-Z]+)\s*,\s*"
-              "(?P<label>[0-9a-zA-Z]+)"),
+  re.compile(r"(?i)^[^#]*?" +
+              NAME +
+              RT + COMMA +
+              LABEL),
 
   # nop
   re.compile(r"(?i)^[^#A-Za-z]*?"
@@ -185,9 +193,15 @@ class Instruction:
   def ToBinary(self):
     if self.name in r_type.keys():
       b = 0                            # opcode
-      b |= (self.rs.binary() << 21)    # rs
-      b |= (self.rt.binary() << 16)    # rt
-      b |= (self.rd.binary() << 11)    # rd
+      # Special case for srl and sll, because why.
+      if self.name == "srl" or self.name == "sll":
+        b |= (self.rd.binary() << 21)    # rs
+        b |= (self.rt.binary() << 16)    # rt
+        b |= (self.rs.binary() << 11)    # rd
+      else:
+        b |= (self.rs.binary() << 21)    # rs
+        b |= (self.rt.binary() << 16)    # rt
+        b |= (self.rd.binary() << 11)    # rd
 
       b |= (self.imm << 6)             # shamt
       b |= (r_type[self.name][1] << 0) # funct

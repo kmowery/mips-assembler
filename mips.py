@@ -26,9 +26,9 @@ class MIPSProgram:
     if re.match("^\s*$", line) is not None:
       return
 
-    m = re.match(r'''^\s*\.STRING\s*(?P<label>[a-zA-Z0-9]+)\s*"(?P<str>.*)"''', line)
+    m = re.match(r'''^\s*\.STRING\s*(?P<label>[a-zA-Z0-9]+)\s*(?P<str>".*")''', line)
     if m is not None:
-      self.RegisterDataLabel(m.group('label'), m.group('str'))
+      self.RegisterDataLabel(m.group('label'), eval(m.group('str')))
       return
     m = re.match("^\s*(?P<label>[a-zA-Z0-9]+):\.*$", line)
     if m is not None:

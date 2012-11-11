@@ -1,15 +1,22 @@
 .STRING no "012345678"
 .STRING printfstr "012345678"
 
+.DEFINE SBIDH_CC_MASK 0xfff0
+.DEFINE SBIDH_CC_SHIFT 4
+
+.DEFINE SB_CORE_SIZE 0x1000
 
 main:
+  #addiu $a0, $a0, SB_CORE_SIZE
+  addiu $t9,$0,0xfff
+  srl  $k1, $k1, SBIDH_CC_SHIFT
 
-  jal 0x38a14
-freeze:
-  beq $0, $0, freeze
-  addi $t0, $t0, freeze
-  addi $t0, $t0, 0x1234
-  nop
+#  jal 0x38a14
+#freeze:
+#  beq $0, $0, freeze
+#  addi $t0, $t0, freeze
+#  addi $t0, $t0, 0x1234
+#  nop
 #  add $t0, $0, $0
 #elsewhere:
 #  addi $t0, $t0, 0x20

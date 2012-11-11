@@ -11,36 +11,37 @@ FIRST  = "(?P<first>\$[0-9a-zA-Z]+)\s*"
 SECOND = "(?P<second>\$[0-9a-zA-Z]+)\s*"
 THIRD  = "(?P<third>\$[0-9a-zA-Z]+)\s*"
 COMMA  = "\s*,\s*"
+EOL    = "\s*(#.*)?$"
 
 LINE_BEGIN = r"(?i)^[^#]*?"
 
 instruction_types = [
     re.compile(LINE_BEGIN +
-      NAME + FIRST + COMMA + SECOND + COMMA + THIRD),
+      NAME + FIRST + COMMA + SECOND + COMMA + THIRD + EOL),
 
     re.compile(LINE_BEGIN +
-      NAME + FIRST + COMMA + SECOND + COMMA + LABEL),
+      NAME + FIRST + COMMA + SECOND + COMMA + LABEL + EOL),
 
     re.compile(LINE_BEGIN +
-      NAME + FIRST + COMMA + SECOND + COMMA + IMM),
+      NAME + FIRST + COMMA + SECOND + COMMA + IMM + EOL),
 
     re.compile(LINE_BEGIN +
-      NAME + FIRST + COMMA + IMM + "\(\s*" + SECOND + "\s*\)\s*"),
+      NAME + FIRST + COMMA + IMM + "\(\s*" + SECOND + "\s*\)\s*" + EOL),
 
     re.compile(LINE_BEGIN +
-      NAME + FIRST + COMMA + LABEL),
+      NAME + FIRST + COMMA + LABEL + EOL),
 
     re.compile(LINE_BEGIN +
-      NAME + FIRST + COMMA + IMM),
+      NAME + FIRST + COMMA + IMM + EOL),
 
     re.compile(LINE_BEGIN +
-      NAME + LABEL),
+      NAME + LABEL + EOL),
 
     re.compile(LINE_BEGIN +
-      NAME + IMM),
+      NAME + IMM + EOL),
 
     re.compile(LINE_BEGIN +
-      NAME_NO_SPACE)
+      NAME_NO_SPACE + EOL)
 ]
 
 r_type = {

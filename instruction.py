@@ -16,15 +16,9 @@ instruction_types = [
               "(?P<name>[a-zA-Z]+)\s*"
               "(?P<rt>\$[0-9a-zA-Z]+)\s*,\s*"
               "(?P<rs>\$[0-9a-zA-Z]+)\s*,\s*"
-              "(?P<imm>-?[x0-9A-Fa-f]+)"),
+              "(?P<imm>-?[0-9][x0-9A-Fa-f]+)"),
 
   # addi $t0, $t0, label
-  re.compile(r"(?i)^[^#]*?"
-              "(?P<name>[a-zA-Z]+)\s*"
-              "(?P<rt>\$[0-9a-zA-Z]+)\s*,\s*"
-              "(?P<rs>\$[0-9a-zA-Z]+)\s*,\s*"
-              "(?P<label>[A-Fa-f0-9]+)"),
-
   # beq $t0, $0, main
   re.compile(r"(?i)^[^#]*?"
               "(?P<name>[a-zA-Z]+)\s*"
@@ -41,7 +35,7 @@ instruction_types = [
   # j main
   re.compile(r"(?i)^[^#]*?"
               "(?P<name>j[al]*)\s+"
-              "(?P<imm>[x0-9a-fA-F]+)"),
+              "(?P<imm>[0-9][x0-9a-fA-F]+)"),
   re.compile(r"(?i)^[^#]*?"
               "(?P<name>j[al]*)\s+"
               "(?P<label>[0-9a-zA-Z]+)"),
@@ -55,14 +49,14 @@ instruction_types = [
   re.compile(r"(?i)^[^#]*?"
               "(?P<name>[a-zA-Z]+)\s*"
               "(?P<rt>\$[0-9a-zA-Z]+)\s*,\s*"
-              "(?P<imm>-?[x0-9A-Fa-f]+)\s*"
+              "(?P<imm>-?[0-9][x0-9A-Fa-f]+)\s*"
               "\(\s*(?P<rs>\$[0-9a-zA-Z]+\s*)\)\s*"),
 
   # lui $t0, 0x8403
   re.compile(r"(?i)^[^#]*?"
               "(?P<name>[a-zA-Z]+)\s*"
               "(?P<rt>\$[0-9a-zA-Z]+)\s*,\s*"
-              "(?P<imm>-?[x0-9A-Fa-f]+)\s*"),
+              "(?P<imm>-?[0-9][x0-9A-Fa-f]+)\s*"),
 
   # li $t0, label
   re.compile(r"(?i)^[^#]*?"
@@ -153,6 +147,7 @@ class Instruction:
   def __init__(self, program, position, name=None, rs=None, rt=None,
                      rd=None, imm=None,
                      label=None):
+
     if name.lower() not in r_type.keys() and \
        name.lower() not in i_type.keys() and \
        name.lower() not in j_type.keys():

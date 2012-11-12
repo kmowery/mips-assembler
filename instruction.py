@@ -263,14 +263,14 @@ class PseudoInstruction:
           name="lui", first=first,
           label=lambda: program.Label(label) >> 16 & 0xFFFF))
         self.instructions.append(Instruction(self.program, position+1,
-          name="addiu", first=first, second=first,
+          name="ori", first=first, second=first,
           label=lambda: program.Label(label) & 0xFFFF))
       else:
         self.instructions.append(Instruction(self.program, position,
           name="lui", first=first,
           imm=((eval(imm) >> 16) & 0xFFFF)))
         self.instructions.append(Instruction(self.program, position+1,
-          name="addiu", first=first, second=first,
+          name="ori", first=first, second=first,
           imm=(eval(imm) & 0xFFFF)))
     elif name == "nop":
       self.instructions.append(Instruction(self.program, position,

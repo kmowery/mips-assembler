@@ -35,6 +35,9 @@ instruction_types = [
       NAME + FIRST + COMMA + IMM + EOL),
 
     re.compile(LINE_BEGIN +
+      NAME + FIRST + EOL),
+
+    re.compile(LINE_BEGIN +
       NAME + LABEL + EOL),
 
     re.compile(LINE_BEGIN +

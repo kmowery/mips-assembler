@@ -7,6 +7,8 @@
 .DEFINE SB_CORE_SIZE 0x1000
 
 main:
+jr $ra
+
   #addiu $a0, $a0, SB_CORE_SIZE
   addiu $t9,$0,0xfff
   srl  $k1, $k1, SBIDH_CC_SHIFT
